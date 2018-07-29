@@ -20,6 +20,7 @@ That way we have flow separated from each step or page of the form. We just need
 - S4 (Symfony4) architecture, esp. configuration
 - making S4 microservice up'n ready, creating own boilerplate
 - Design Patterns and PHP7 features
+- How to work in MacOS Sierra environment
 
 **MVP Definition**
 - MUST-HAVE: configuration architecture allowing to manage separate projects, with multiple flows (request params)
@@ -42,3 +43,115 @@ That way we have flow separated from each step or page of the form. We just need
 - add routing, handler, model for POST request
 - find best way on how to describe flows of the client application in yaml config file
 - add config file with a solution for reading from it
+
+**Setting up project**
+
+- Setting up Vagrant box
+```
+vagrant box add laravel/homestead
+
+git clone https://github.com/laravel/homestead.git ./homestead
+
+cd ./homestead
+
+bash init.sh
+
+ssh-keygen -t rsa -C "vagrant@vagrant"
+```
+
+this plugin is for file sharing with vagrant box:
+```
+vagrant plugin install vagrant-bindfs
+```
+- Configuring the box:
+
+```
+nano Homestead.yaml
+```
+update the following lines:
+```yaml
+folders:
+- map: ~/Sites/flow-manager-microservice/code
+to: /home/vagrant/code
+type: "nfs"
+
+sites:
+- map: fmm.local
+to: /home/vagrant/code/web
+
+databases:
+- fmm
+```
+- Setting up host
+
+copy the ip address with domain name from the top of the Homestead.yaml file and:
+
+```
+sudo nano /etc/hosts
+```
+
+add line at the end:
+
+```
+192.168.10.10 fmm.local
+```
+save and close the editor
+
+- Install Symfony 3.3
+
+```
+vagrant up
+
+vagrant ssh
+
+vagrant@homestead:~$ composer create-project symfony/framework-standard-edition code "3.3.*"
+```
+- modifying app_dev.php:
+
+open the url in browser:
+```http://fmm.local/app_dev.php```
+
+you will get the message 
+
+```You are not allowed to access this file. Check app_dev.php for more information.```
+
+open web/app_dev.php and comment the following lines:
+
+```php
+if (isset($_SERVER['HTTP_CLIENT_IP'])
+    || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+    || !(in_array(@$_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'], true) || PHP_SAPI === 'cli-server')
+) {
+    header('HTTP/1.0 403 Forbidden');
+    exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
+}
+```
+- connecting to MySQL database, available in vagrant box:
+
+```yaml
+host: 127.0.0.1
+user: homestead
+password: secret
+port: 33060 (port forwarding)
+```
+you should see empty fmm database.
+
+- setting up privileges for root url 
+
+if you go to ```http://fmm.local``` then you'll get 403 Forbidden response. To solve this open Homestead.yaml file and under section "sites" add this line:
+
+```yaml
+      type: symfony
+```
+then save, exit and:
+```yaml
+vagrant reload --provision
+```
+this command needs to be done whenever you make changes to the machine configuration.
+
+- Installing required packages
+
+```yaml
+vagrant@homestead:~/code$ composer require firendsofsymfony/rest-bundle
+vagrant@homestead:~/code$ composer require jms/serializer-bundle
+```
