@@ -1,5 +1,5 @@
 # flow-manager-microservice
-Flow Manager Microservice (FMM) is example microservice written using Symfony4
+Flow Manager Microservice (FMM) is example microservice written using Symfony Framework, Vagrant and VirtualBox. Mainly for learning purposes.
 
 **The big picture**
 
